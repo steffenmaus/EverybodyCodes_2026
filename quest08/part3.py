@@ -1,0 +1,92 @@
+from collections import defaultdict
+
+with open('input3.txt') as file:
+    lines = [line.rstrip() for line in file]
+
+
+def f(starts, dx, dy):
+    affected = set()
+    for s in starts:
+        height = 0
+        x, y = s
+        while (x, y) in maze and maze[(x, y)] != '.':
+            if maze[(x, y)] >= height:
+                affected.add((x, y))
+            height = max(height - 1, maze[(x, y)])
+            x += dx
+            y += dy
+
+    return affected
+
+
+X = len(lines[0])
+Y = len(lines)
+
+maze = {}
+for y in range(Y):
+    for x in range(X):
+        c = lines[y][x]
+        if c != '.':
+            c = int(c)
+        maze[(x, y)] = c
+
+starts_top = set([(x, 0) for x in range(X) if maze[(x, 0)] != '.'])
+starts_bottom = set([(x, Y - 1) for x in range(X) if maze[(x, Y - 1)] != '.'])
+
+starts_top_left = set()
+x, y = min(starts_top)
+while (x, y) in maze:
+    starts_top_left.add((x, y))
+    x -= 1
+    y += 1
+
+starts_top_right = set()
+x, y = max(starts_top)
+while (x, y) in maze:
+    starts_top_right.add((x, y))
+    x += 1
+    y += 1
+
+starts_bottom_right = set()
+x, y = max(starts_bottom)
+while (x, y) in maze:
+    starts_bottom_right.add((x, y))
+    x += 1
+    y -= 1
+
+starts_bottom_left = set()
+x, y = min(starts_bottom)
+while (x, y) in maze:
+    starts_bottom_left.add((x, y))
+    x -= 1
+    y -= 1
+
+parameters = []  # points, dx,dy
+parameters.append((starts_top_left | starts_top, 1, 1))
+parameters.append((starts_top | starts_top_right, -1, 1))
+parameters.append((starts_top_right | starts_bottom_right, -2, 0))
+parameters.append((starts_bottom | starts_bottom_right, -1, -1))
+parameters.append((starts_bottom | starts_bottom_left, 1, -1))
+parameters.append((starts_top_left | starts_bottom_left, 2, 0))
+
+energy = 0
+round = 0
+grown = 0
+seeds = defaultdict(list)
+while grown < 100000:
+    affected = f(*parameters[round % 6])
+    for a in affected:
+        if maze[a] > 0:
+            maze[a] += 1
+            energy += 1
+            if maze[a] == 10:
+                grown += 1
+                maze[a] = 0
+                seeds[round + 3].append(a)
+
+    for s in seeds[round]:
+        maze[s] = 1
+
+    round += 1
+
+print(energy)
